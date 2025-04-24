@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>簡単操作電話帳</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-user-select: none;
+            user-select: none;
+            touch-action: manipulation;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            min-height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            background: #f5f5f5;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            padding-bottom: 80px; /* フッターの高さ分の余白 */
+        }
+        
+        .header {
+            background: #0066CC;
+            color: white;
+            padding: 18px 0;
+            font-size: 24px;
+            font-weight: bold;
+            width: 100%;
+            height: 70px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+            flex-shrink: 0;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        
+        .header-title {
+            flex: 1;
+            text-align: center;
+        }
+        
+        .edit-btn {
+            background: transparent;
+            border: none;
+            color: white;
+            font-size: 20px;
+            padding: 10px;
+        }
+        
+        .main-content {
+            flex: 1;
+            overflow-y: auto;
+            width: 100%;
+            padding: 15px 12px 80px; /* 下部にフッター分の余白を追加 */
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 1fr 1fr;
+            gap: 12px;
+            flex: 1;
+            min-height: 0;
+        }
+        
+        .contact-btn {
+            background: white;
+            border-radius: 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            padding: 15px 10px;
+            min-height: 0;
+            border: none;
+            height: 100%;
+        }
+        
+        .contact-btn[data-color="green"] { background: #00AA55; color: white; }
+        .contact-btn[data-color="blue"] { background: #4488FF; color: white; }
+        .contact-btn[data-color="red"] { background: #FF4444; color: white; }
+        .contact-btn[data-color="yellow"] { background: #FFCC00; color: #333; }
+        
+        .contact-info {
+            width: 90%;
+            text-align: center;
+            pointer-events: none;
+        }
+        
+        .contact-name {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 8px;
+            word-break: break-word;
+        }
+        
+        .contact-number {
+            font-size: 18px;
+            word-break: break-all;
+        }
+        
+        .footer {
+            background: #333;
+            color: white;
+            text-align: center;
+            padding: 15px 0;
+            font-size: 16px;
+            width: 100%;
+            line-height: 1.5;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            z-index: 5;
+        }
+        
+        .footer a {
+            color: #4DA6FF;
+            text-decoration: none;
+        }
+        
+        .status-message {
+            position: fixed;
+            bottom: 160px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.85);
+            color: white;
+            padding: 18px 30px;
+            border-radius: 35px;
+            font-size: 20px;
+            font-weight: bold;
+            display: none;
+            z-index: 50;
+            max-width: 90%;
+            text-align: center;
+        }
+        
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            z-index: 100;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .modal-content {
+            background: white;
+            width: 90%;
+            max-width: 420px;
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        
+        .input-group {
+            margin-bottom: 20px;
+        }
+        
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        
+        .input-group input {
+            width: 100%;
+            padding: 16px;
+            font-size: 18px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            -webkit-user-select: text;
+            user-select: text;
+        }
+        
+        .modal-actions {
+            display: flex;
+            justify-content: space-between;
+            gap: 15px;
+            margin-top: 25px;
+        }
+        
+        .modal-btn {
+            padding: 16px;
+            border: none;
+            border-radius: 10px;
+            font-weight: bold;
+            font-size: 18px;
+            cursor: pointer;
+            flex: 1;
+        }
+        
+        .cancel-btn {
+            background: #FF4444;
+            color: white;
+        }
+        
+        .save-btn {
+            background: #00AA55;
+            color: white;
+        }
+        
+        .contact-selector {
+            margin-bottom: 20px;
+        }
+        
+        .contact-selector select {
+            width: 100%;
+            padding: 12px;
+            font-size: 18px;
+            border-radius: 8px;
+            border: 2px solid #ddd;
+        }
+        
+        /* 階層型リスト用スタイル */
+        .category-list {
+            display: none;
+            position: fixed;
+            top: 70px;
+            left: 0;
+            width: 100%;
+            height: calc(100% - 150px);
+            background: #f5f5f5;
+            z-index: 20;
+            overflow-y: auto;
+            padding: 20px 12px;
+        }
+        
+        .category-list.active {
+            display: block;
+        }
+        
+        .contact-item {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 12px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+            font-size: 20px;
+        }
+        
+        .contact-item-name {
+            font-size: 22px;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+        
+        .contact-item-number {
+            font-size: 18px;
+            color: #666;
+        }
+        
+        .back-btn {
+            background: #0066CC;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            padding: 15px;
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            width: 100%;
+        }
+        
+        .add-contact-btn {
+            background: #00AA55;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            padding: 15px;
+            font-size: 18px;
+            font-weight: bold;
+            margin-top: 20px;
+            width: 100%;
+        }
+        
+        .empty-message {
+            text-align: center;
+            font-size: 18px;
+            color: #666;
+            padding: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-title">簡単操作電話帳</div>
+        <button class="edit-btn" id="editModeBtn">編集</button>
+    </div>
+    
+    <div class="main-content">
+        <div class="container" id="mainContainer">
+            <button class="contact-btn" data-color="green" id="btn-1">
+                <div class="contact-info">
+                    <div class="contact-name" id="name-1">家族</div>
+                    <div class="contact-number" id="number-1">タップして選択</div>
+                </div>
+            </button>
+            
+            <button class="contact-btn" data-color="blue" id="btn-2">
+                <div class="contact-info">
+                    <div class="contact-name" id="name-2">友達</div>
+                    <div class="contact-number" id="number-2">タップして選択</div>
+                </div>
+            </button>
+            
+            <button class="contact-btn" data-color="red" id="btn-3">
+                <div class="contact-info">
+                    <div class="contact-name" id="name-3">仕事</div>
+                    <div class="contact-number" id="number-3">タップして選択</div>
+                </div>
+            </button>
+            
+            <button class="contact-btn" data-color="yellow" id="btn-4">
+                <div class="contact-info">
+                    <div class="contact-name" id="name-4">その他</div>
+                    <div class="contact-number" id="number-4">タップして選択</div>
+                </div>
+            </button>
+        </div>
+        
+        <!-- カテゴリごとの連絡先リスト -->
+        <div class="category-list" id="category-1">
+            <button class="back-btn" id="backBtn-1">家族一覧に戻る</button>
+            <div id="contacts-list-1"></div>
+            <button class="add-contact-btn" data-category="1">新しい家族を追加</button>
+        </div>
+        
+        <div class="category-list" id="category-2">
+            <button class="back-btn" id="backBtn-2">友達一覧に戻る</button>
+            <div id="contacts-list-2"></div>
+            <button class="add-contact-btn" data-category="2">新しい友達を追加</button>
+        </div>
+        
+        <div class="category-list" id="category-3">
+            <button class="back-btn" id="backBtn-3">仕事一覧に戻る</button>
+            <div id="contacts-list-3"></div>
+            <button class="add-contact-btn" data-category="3">新しい仕事を追加</button>
+        </div>
+        
+        <div class="category-list" id="category-4">
+            <button class="back-btn" id="backBtn-4">その他一覧に戻る</button>
+            <div id="contacts-list-4"></div>
+            <button class="add-contact-btn" data-category="4">新しい連絡先を追加</button>
+        </div>
+    </div>
+    
+    <div class="status-message" id="statusMessage"></div>
+    
+    <div class="footer">
+        お問い合わせ<br>
+        <a href="mailto:mementomorikatsu@gmail.com">mementomorikatsu@gmail.com</a>
+    </div>
+    
+    <!-- 連絡先編集モーダル -->
+    <div id="editModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="contact-selector">
+                <label for="contactCategory">カテゴリ</label>
+                <select id="contactCategory">
+                    <option value="1">家族</option>
+                    <option value="2">友達</option>
+                    <option value="3">仕事</option>
+                    <option value="4">その他</option>
+                </select>
+            </div>
+            
+            <div class="input-group">
+                <label for="editName">表示名</label>
+                <input type="text" id="editName" placeholder="例: 山田太郎">
+            </div>
+            <div class="input-group">
+                <label for="editNumber">電話番号</label>
+                <input type="tel" id="editNumber" placeholder="例: 09012345678">
+            </div>
+            <div class="modal-actions">
+                <button class="modal-btn cancel-btn" id="cancelBtn">キャンセル</button>
+                <button class="modal-btn save-btn" id="saveBtn">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const SimplePhoneBook = {
+            currentContact: null,
+            currentCategory: null,
+            isCalling: false,
+            speech: new (window.SpeechSynthesisUtterance || window.webkitSpeechSynthesisUtterance)(),
+            touchTimer: null,
+            editingContactId: null,
+            
+            init() {
+                this.setupSpeech();
+                this.loadCategories();
+                this.setupEventListeners();
+                this.announceReady();
+            },
+            
+            setupSpeech() {
+                this.speech.lang = 'ja-JP';
+                this.speech.rate = 0.9;
+                this.speech.volume = 1;
+            },
+            
+            loadCategories() {
+                // メインカテゴリの設定
+                const categories = [
+                    { id: 1, name: '家族', color: 'green' },
+                    { id: 2, name: '友達', color: 'blue' },
+                    { id: 3, name: '仕事', color: 'red' },
+                    { id: 4, name: 'その他', color: 'yellow' }
+                ];
+                
+                categories.forEach(cat => {
+                    this.updateCategoryDisplay(cat.id, cat.name, 'タップして選択', cat.color);
+                    this.loadContactsForCategory(cat.id);
+                });
+            },
+            
+            loadContactsForCategory(categoryId) {
+                const contactsContainer = document.getElementById(`contacts-list-${categoryId}`);
+                contactsContainer.innerHTML = '';
+                
+                const savedContacts = localStorage.getItem(`simple_phonebook_${categoryId}`);
+                if (savedContacts) {
+                    const contacts = JSON.parse(savedContacts);
+                    
+                    if (contacts.length === 0) {
+                        contactsContainer.innerHTML = '<div class="empty-message">登録された連絡先がありません</div>';
+                        return;
+                    }
+                    
+                    contacts.forEach((contact, index) => {
+                        const contactItem = document.createElement('div');
+                        contactItem.className = 'contact-item';
+                        contactItem.dataset.id = index;
+                        contactItem.dataset.category = categoryId;
+                        contactItem.innerHTML = `
+                            <div class="contact-item-name">${contact.name}</div>
+                            <div class="contact-item-number">${contact.number}</div>
+                        `;
+                        
+                        contactItem.addEventListener('click', () => this.handleContactItemClick(categoryId, index));
+                        contactsContainer.appendChild(contactItem);
+                    });
+                } else {
+                    contactsContainer.innerHTML = '<div class="empty-message">登録された連絡先がありません</div>';
+                }
+            },
+            
+            setupEventListeners() {
+                // メインカテゴリボタン
+                for (let i = 1; i <= 4; i++) {
+                    const btn = document.getElementById(`btn-${i}`);
+                    btn.addEventListener('click', () => this.showCategoryContacts(i));
+                    
+                    // 戻るボタン
+                    document.getElementById(`backBtn-${i}`).addEventListener('click', () => this.hideCategoryContacts(i));
+                }
+                
+                // 編集モードボタン
+                document.getElementById('editModeBtn').addEventListener('click', () => this.openAddContactModal());
+                
+                // 連絡先追加ボタン
+                document.querySelectorAll('.add-contact-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const categoryId = e.target.dataset.category;
+                        this.openAddContactModal(categoryId);
+                    });
+                });
+                
+                // モーダル操作
+                document.getElementById('saveBtn').addEventListener('click', () => this.saveContact());
+                document.getElementById('cancelBtn').addEventListener('click', () => this.closeEditModal());
+            },
+            
+            showCategoryContacts(categoryId) {
+                this.currentCategory = categoryId;
+                document.getElementById('mainContainer').style.display = 'none';
+                document.getElementById(`category-${categoryId}`).classList.add('active');
+                
+                const categoryName = document.getElementById(`name-${categoryId}`).textContent;
+                this.speak(`${categoryName}の連絡先一覧`);
+            },
+            
+            hideCategoryContacts(categoryId) {
+                document.getElementById('mainContainer').style.display = 'grid';
+                document.getElementById(`category-${categoryId}`).classList.remove('active');
+                
+                const categoryName = document.getElementById(`name-${categoryId}`).textContent;
+                this.speak(`${categoryName}カテゴリに戻りました`);
+            },
+            
+            handleContactItemClick(categoryId, contactIndex) {
+                const savedContacts = localStorage.getItem(`simple_phonebook_${categoryId}`);
+                if (savedContacts) {
+                    const contacts = JSON.parse(savedContacts);
+                    const contact = contacts[contactIndex];
+                    
+                    if (this.isCalling) return;
+                    
+                    this.isCalling = true;
+                    this.showStatusMessage(`${contact.name}に発信します`);
+                    this.vibrate([100, 50, 100]);
+                    this.speak(`${contact.name}に電話をかけます`);
+                    
+                    setTimeout(() => {
+                        window.location.href = `tel:${contact.number}`;
+                        this.isCalling = false;
+                    }, 1500);
+                }
+            },
+            
+            openAddContactModal(categoryId = null) {
+                if (categoryId) {
+                    document.getElementById('contactCategory').value = categoryId;
+                }
+                
+                document.getElementById('editName').value = '';
+                document.getElementById('editNumber').value = '';
+                this.editingContactId = null;
+                document.getElementById('editModal').style.display = 'flex';
+                this.speak('新しい連絡先を追加します');
+            },
+            
+            saveContact() {
+                const categoryId = document.getElementById('contactCategory').value;
+                const name = document.getElementById('editName').value.trim();
+                let number = document.getElementById('editNumber').value.trim().replace(/\D+/g, '');
+                
+                if (!name) {
+                    this.speak('名前を入力してください');
+                    return;
+                }
+                
+                if (!number || number.length < 10) {
+                    this.speak('有効な電話番号を入力してください');
+                    return;
+                }
+                
+                // 電話番号を読みやすい形式にフォーマット
+                if (number.length === 10) {
+                    number = number.replace(/(\d{2})(\d{4})(\d{4})/, '$1-$2-$3');
+                } else if (number.length === 11) {
+                    number = number.replace(/(\d{3})(\d{4})(\d{4})/, '$1-$2-$3');
+                }
+                
+                const contactData = { name, number };
+                const storageKey = `simple_phonebook_${categoryId}`;
+                
+                const savedContacts = localStorage.getItem(storageKey);
+                let contacts = savedContacts ? JSON.parse(savedContacts) : [];
+                
+                if (this.editingContactId !== null) {
+                    contacts[this.editingContactId] = contactData;
+                } else {
+                    contacts.push(contactData);
+                }
+                
+                localStorage.setItem(storageKey, JSON.stringify(contacts));
+                this.loadContactsForCategory(categoryId);
+                this.closeEditModal();
+                
+                const categoryName = document.getElementById(`name-${categoryId}`).textContent;
+                this.speak(`${categoryName}に${name}を保存しました`);
+            },
+            
+            updateCategoryDisplay(categoryId, name, number, color) {
+                document.getElementById(`name-${categoryId}`).textContent = name;
+                document.getElementById(`number-${categoryId}`).textContent = number;
+                document.getElementById(`btn-${categoryId}`).setAttribute('data-color', color);
+            },
+            
+            closeEditModal() {
+                document.getElementById('editModal').style.display = 'none';
+            },
+            
+            showStatusMessage(message) {
+                const statusEl = document.getElementById('statusMessage');
+                statusEl.textContent = message;
+                statusEl.style.display = 'block';
+                
+                setTimeout(() => {
+                    statusEl.style.display = 'none';
+                }, 3000);
+            },
+            
+            speak(text) {
+                if (window.speechSynthesis) {
+                    this.speech.text = text;
+                    window.speechSynthesis.cancel();
+                    window.speechSynthesis.speak(this.speech);
+                }
+            },
+            
+            vibrate(pattern) {
+                if (navigator.vibrate) {
+                    navigator.vibrate(pattern);
+                }
+            },
+            
+            announceReady() {
+                setTimeout(() => {
+                    this.speak('簡単操作電話帳の準備ができました。家族、友達、仕事、その他のボタンから選んでください。連絡先をタップすると電話をかけます。編集ボタンから新しい連絡先を追加できます。');
+                }, 800);
+            }
+        };
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            SimplePhoneBook.init();
+        });
+    </script>
+</body>
+</html>
